@@ -1,0 +1,11 @@
+Demo instructions
+
+open 1worxdemo folder on the desktop
+
+run the creo shortcut in that folder
+run creoedge.bat
+in creo, open the twittter_p1 model
+in the 1worxdemo folder, open the makerbot folder
+run makerbotpoller.bat
+press the flashing button on the 3d printer
+run printerdemo.bat

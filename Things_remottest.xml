@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><Entities build="b460" majorVersion="6" minorVersion="5" modelPersistenceProviderPackage="NeoPersistenceProviderPackage" revision="0" schemaVersion="808"><Things><Thing description="text test" documentationContent="&#10;" effectiveThingPackage="RemoteThing" enabled="true" homeMashup="remote test mashup" identifier="creo1" lastModifiedDate="2016-01-22T07:10:13.914+02:00" name="remottest" published="false" tags="Applications:1worx" thingTemplate="RemoteThing" valueStream=""><Owner name="Administrator" type="User"/><avatar/><DesignTimePermissions><Create/><Read/><Update/><Delete/><Metadata/></DesignTimePermissions><RunTimePermissions/><VisibilityPermissions><Visibility/></VisibilityPermissions><ConfigurationTables/><ThingShape><PropertyDefinitions><PropertyDefinition aspect.cacheTime="0.0" aspect.dataChangeType="VALUE" aspect.isLogged="false" aspect.isPersistent="false" aspect.isReadOnly="false" baseType="BOOLEAN" category="" description="" isLocalOnly="false" name="lock" ordinal="2"/><PropertyDefinition aspect.cacheTime="0.0" aspect.dataChangeType="VALUE" aspect.isLogged="false" aspect.isPersistent="false" aspect.isReadOnly="false" baseType="STRING" category="" description="" isLocalOnly="false" name="text" ordinal="1"/></PropertyDefinitions><ServiceDefinitions><ServiceDefinition aspect.isAsync="false" category="" description="" isAllowOverride="false" isLocalOnly="false" isOpen="false" isPrivate="false" name="callit"><ResultType baseType="NOTHING" description="" name="result" ordinal="0"/><ParameterDefinitions/></ServiceDefinition><ServiceDefinition aspect.isAsync="false" category="" description="" isAllowOverride="false" isLocalOnly="false" isOpen="false" isPrivate="false" name="displayText"><ResultType aspect.dataShape="myTestData" baseType="INFOTABLE" description="" name="result" ordinal="0"/><ParameterDefinitions/></ServiceDefinition><ServiceDefinition category="" description="Generate a new model in creo" isAllowOverride="false" isLocalOnly="false" isOpen="false" isPrivate="false" name="generateModel"><ResultType baseType="NOTHING" description="" name="" ordinal="0"/><ParameterDefinitions><FieldDefinition baseType="STRING" description="name" name="name" ordinal="0"/><FieldDefinition baseType="STRING" description="parameters" name="parameters" ordinal="1"/></ParameterDefinitions></ServiceDefinition><ServiceDefinition category="" description="Shutdown the client" isAllowOverride="false" isLocalOnly="false" isOpen="false" isPrivate="false" name="Shutdown"><ResultType baseType="NOTHING" description="" name="" ordinal="0"/><ParameterDefinitions/></ServiceDefinition><ServiceDefinition aspect.isAsync="false" category="" description="" isAllowOverride="false" isLocalOnly="false" isOpen="false" isPrivate="false" name="concurrencyTest"><ResultType baseType="NOTHING" description="" name="result" ordinal="0"/><ParameterDefinitions><FieldDefinition baseType="STRING" description="" name="text" ordinal="2"/><FieldDefinition baseType="STRING" description="" name="parameters" ordinal="3"/><FieldDefinition baseType="STRING" description="" name="username" ordinal="1"/></ParameterDefinitions></ServiceDefinition></ServiceDefinitions><EventDefinitions><EventDefinition category="" dataShape="CreoModelSavedEventData" description="Creo model saved event" name="ModelSaved"/></EventDefinitions><ServiceMappings/><ServiceImplementations><ServiceImplementation description="" handlerName="Script" name="callit"><ConfigurationTables><ConfigurationTable description="Script" isMultiRow="false" name="Script" ordinal="0"><DataShape><FieldDefinitions><FieldDefinition baseType="STRING" description="code" name="code" ordinal="0"/></FieldDefinitions></DataShape><Rows><Row><code><![CDATA[var params = {
+    text: "te",
+    username: "@1WorxAfrica",
+    parameters: "1234"
+};
+me.concurrencyTest(params)
+
+var params = {
+    text: "tex",
+    username: "@1worxDev",
+    parameters: "4444"
+};
+me.concurrencyTest(params);]]></code></Row></Rows></ConfigurationTable></ConfigurationTables></ServiceImplementation><ServiceImplementation description="" handlerName="Script" name="displayText"><ConfigurationTables><ConfigurationTable description="Script" isMultiRow="false" name="Script" ordinal="0"><DataShape><FieldDefinitions><FieldDefinition baseType="STRING" description="code" name="code" ordinal="0"/></FieldDefinitions></DataShape><Rows><Row><code><![CDATA[// tags:TAGS
+var tags = new Array();
+
+// timestamp:DATETIME
+var timestamp = new Date();
+//Things["TextArea"].setText();
+logger.info("test");
+
+
+var params = {
+	infoTableName : "InfoTable",
+	dataShapeName : "myTestData"
+};
+
+// CreateInfoTableFromDataShape(infoTableName:STRING("InfoTable"), dataShapeName:STRING):INFOTABLE(myTestData)
+var result = Resources["InfoTableFunctions"].CreateInfoTableFromDataShape(params);
+
+result.text = "the value I set";
+
+]]></code></Row></Rows></ConfigurationTable></ConfigurationTables></ServiceImplementation><ServiceImplementation description="" handlerName="Script" name="concurrencyTest"><ConfigurationTables><ConfigurationTable description="Script" isMultiRow="false" name="Script" ordinal="0"><DataShape><FieldDefinitions><FieldDefinition baseType="STRING" description="code" name="code" ordinal="0"/></FieldDefinitions></DataShape><Rows><Row><code><![CDATA[//if busy dont process this event yet
+logger.error("in concurrency test for" + username);
+
+var query = {
+  "filters": {
+    "fieldName": "status",
+    "type": "EQ",
+    "value": "In design"
+  }
+};     
+var params = {
+          query: query /* QUERY */,
+      };
+var result = Things["1worxOrders"].QueryDataTableEntries(params);
+   
+var status = "Order received";
+if ( result.getRowCount() == 0 )//&& !me.lock)
+{
+    //me.lock = true;
+logger.error("generate model for" + username);
+    
+    var params = {
+        name: username /* STRING */,
+        parameters: parameters /* STRING */
+    };
+
+    // result: STRING
+    me.generateModel(params);
+    status = "In design";
+}
+
+    if (! (result.getRowCount() != 0 && result[0].name == username  ) )
+    {
+        ///////////////////////////////////
+        //add data to table for gui display
+
+        // tags:TAGS
+        var tags = new Array();
+
+        // values:INFOTABLE(Datashape: 1worxOrderData)
+        var values = Things["1worxOrders"].CreateValues();
+
+        values.text = text; //STRING
+        values.parameters = parameters; //STRING
+        values.time = new Date(); //DATETIME
+        values.status = status; //STRING
+        values.name = username; //STRING [Primary Key]
+
+        // location:LOCATION
+        var location = new Object();
+        location.latitude = 0;
+        location.longitude = 0;
+        location.elevation = 0;
+        location.units ="WGS84";
+
+        var params = {
+            tags : tags,
+            source : me.name,
+            values : values,
+            location : location
+        };
+
+        // AddOrUpdateDataTableEntry(tags:TAGS, source:STRING("me.name"), values:INFOTABLE 
+        logger.error("updating table for" + username + " to " +status);
+        //(1worxOrders), location:LOCATION):STRING
+        var id = Things["1worxOrders"].AddOrUpdateDataTableEntry(params);
+    }
+
+
+
+]]></code></Row></Rows></ConfigurationTable></ConfigurationTables></ServiceImplementation></ServiceImplementations><Subscriptions><Subscription enabled="true" eventName="TwitterRecieved" source="MainTwitterThing" sourceProperty=""><ServiceImplementation description="" handlerName="Script" name="MainTwitterThing:TwitterRecieved"><ConfigurationTables><ConfigurationTable description="" isMultiRow="false" name="Script" ordinal="0"><DataShape><FieldDefinitions><FieldDefinition baseType="STRING" description="code" name="code" ordinal="0"/></FieldDefinitions></DataShape><Rows><Row><code><![CDATA[//if busy dont process this event yet
+var query = {
+  "filters": {
+    "fieldName": "status",
+    "type": "EQ",
+    "value": "In design"
+  }
+};     
+var params = {
+          query: query /* QUERY */,
+      };
+var result = Things["1worxOrders"].QueryDataTableEntries(params);
+   
+var status = "Order received";
+if ( result.getRowCount() == 0 )//&& !me.lock)
+{
+    //me.lock = true;
+    logger.info("generate model for " + eventData.username);
+    
+    var params = {
+        name: eventData.username /* STRING */,
+        parameters: eventData.parameters /* STRING */
+    };
+    logger.debug("_"+eventData.parameters+"_");
+    logger.info("_"+eventData.parameters+"_");
+
+
+    // result: STRING
+     me.generateModel(params);
+    status = "In design";
+}
+
+
+if (! (result.getRowCount() != 0 && result[0].name == eventData.username  ) )
+{
+/////////////////////////////////////
+//add data to table for gui display//    
+/////////////////////////////////////
+var tags = new Array();
+
+// values:INFOTABLE(Datashape: 1worxOrderData)
+var values = Things["1worxOrders"].CreateValues();
+
+values.text = eventData.text; //STRING
+values.parameters = eventData.parameters; //STRING
+values.time = new Date(); //DATETIME
+values.status = status; //STRING
+values.name = eventData.username; //STRING [Primary Key]
+
+// location:LOCATION
+var location = new Object();
+location.latitude = 0;
+location.longitude = 0;
+location.elevation = 0;
+location.units ="WGS84";
+
+var params = {
+	tags : tags,
+	source : me.name,
+	values : values,
+	location : location
+};
+
+// AddOrUpdateDataTableEntry(tags:TAGS, source:STRING("me.name"), values:INFOTABLE 
+logger.info("updating table");
+//(1worxOrders), location:LOCATION):STRING
+var id = Things["1worxOrders"].AddOrUpdateDataTableEntry(params);
+}]]></code></Row></Rows></ConfigurationTable></ConfigurationTables></ServiceImplementation></Subscription><Subscription enabled="true" eventName="ModelSaved" source="" sourceProperty=""><ServiceImplementation description="" handlerName="Script" name="ModelSaved"><ConfigurationTables><ConfigurationTable description="" isMultiRow="false" name="Script" ordinal="0"><DataShape><FieldDefinitions><FieldDefinition baseType="STRING" description="code" name="code" ordinal="0"/></FieldDefinitions></DataShape><Rows><Row><code><![CDATA[var params = {
+	key: eventData.message /* STRING */
+};
+
+// result: INFOTABLE dataShape: "undefined"
+var result = Things["1worxOrders"].GetDataTableEntryByKey(params);
+
+if  (result.getRowCount() != 0)
+{
+	logger.error("model saved usernaem param " +eventData.message + " manufacture ready");
+	result.status = "Ready for manufacture"
+
+    var params = {
+        values : result
+	};
+    
+	var id = Things["1worxOrders"].AddOrUpdateDataTableEntry(params);
+}
+
+//get next latest order
+
+/////////////////////////////
+//filter by latest recieved
+//if rowcount != 0
+//call generate model
+
+var query = {
+  "filters": {
+    "fieldName": "status",
+    "type": "EQ",
+    "value": "Order received"
+  }
+};   
+var params = {
+	query: query /* QUERY */,
+};
+// result: INFOTABLE dataShape: "undefined"
+var orders = Things["1worxOrders"].QueryDataTableEntries(params);
+
+var params = {
+	sortColumn: "time" /* STRING */,
+	t: orders /* INFOTABLE */,
+	ascending: false /* BOOLEAN */
+};
+
+// result: INFOTABLE
+result = Resources["InfoTableFunctions"].Sort(params);
+
+if  (orders.getRowCount() != 0)
+{        
+    var params = {
+		key: result[0].name /* STRING */
+    };
+    logger.error("res[0]: "+result[0].name + " result.name: " + result.name);
+    var rowToUpdate = Things["1worxOrders"].GetDataTableEntryByKey(params);
+    
+    rowToUpdate.status = "In design"; 
+    var params = {
+		values: rowToUpdate
+    };
+	var id = Things["1worxOrders"].AddOrUpdateDataTableEntry(params );
+    
+ 	var params = {
+        name: rowToUpdate.name /* STRING */,
+        parameters: rowToUpdate.parameters /* STRING */
+    };
+
+    logger.error("from model saved  calling generate model for next in queue "+ params.name);
+
+    me.generateModel(params);
+}
+else
+{
+    //me.lock = false;
+}]]></code></Row></Rows></ConfigurationTable></ConfigurationTables></ServiceImplementation></Subscription></Subscriptions></ThingShape><PropertyBindings/><RemotePropertyBindings/><RemoteServiceBindings><RemoteServiceBinding enableQueue="false" name="generateModel" sourceName="" timeout="0"/><RemoteServiceBinding enableQueue="false" name="Shutdown" sourceName="" timeout="0"/></RemoteServiceBindings><RemoteEventBindings><RemoteEventBinding name="ModelSaved" sourceName=""/></RemoteEventBindings><AlertConfigurations><AlertDefinitions name="lock"/><AlertDefinitions name="text"/></AlertConfigurations><ImplementedShapes/><ThingProperties/><ConfigurationChanges><ConfigurationChange changeAction="CREATE" changeReason="" timestamp="2016-01-22T07:10:13.914+02:00" user="Administrator"/></ConfigurationChanges></Thing></Things></Entities>
